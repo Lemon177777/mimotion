@@ -14,6 +14,7 @@ import os
 from util.aes_help import encrypt_data, decrypt_data
 import util.zepp_helper as zeppHelper
 import util.push_util as push_util
+import util.step_state as step_state
 
 try:
     from dotenv import load_dotenv
@@ -188,8 +189,13 @@ class MiMotionRunner:
         if app_token is None:
             return "登陆失败！", False
 
-        step = str(random.randint(min_step, max_step))
-        self.log_str += f"已设置为随机步数范围({min_step}~{max_step}) 随机值:{step}\n"
+        lo, hi = min_step, max_step
+        # 只增不减:区间下限不低于本账号今日已提交的最高值,避免微信步数倒退
+        floor = step_state.today_max(self.user)
+        if floor >= lo:
+            lo, hi = floor, max(hi, floor + 1)
+        step = str(random.randint(lo, hi))
+        self.log_str += f"已设置为随机步数范围({lo}~{hi}) 随机值:{step}\n"
         
         user_token_info = user_tokens.get(self.user, {})
         bound_device_id = user_token_info.get("bound_device_id")
@@ -201,6 +207,8 @@ class MiMotionRunner:
                 self.log_str += f"查找到已绑定设备ID: {bound_device_id}\n"
 
         ok, msg = zeppHelper.post_fake_brand_data(step, app_token, self.user_id, device_id=bound_device_id)
+        if ok:
+            step_state.record(int(step), self.user)
         return f"修改步数（{step}）[" + msg + "]", ok
 
 
