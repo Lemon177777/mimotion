@@ -2,7 +2,10 @@ name: 刷步数
 
 on:
   schedule:
-    - cron: '31 10,12,14 * * *'
+    # 注意:GitHub Actions 的 cron 一律按 UTC,北京时间 = UTC+8
+    # 7 0,3,6,9,12,14 = 北京 08:07 / 11:07 / 14:07 / 17:07 / 20:07 / 22:07
+    # 避开整点执行,整点是 GitHub 最拥堵的时段,经常延迟甚至跳过
+    - cron: '7 0,3,6,9,12,14 * * *'
   workflow_dispatch:
 
 jobs:
