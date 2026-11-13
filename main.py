@@ -28,16 +28,16 @@ def get_int_value_default(_config: dict, _key, default):
     return int(_config.get(_key))
 
 
-# 获取当前时间对应的最大和最小步数
+# 获取要提交的步数区间
+# 说明：原版按 time_rate = (hour*60+minute)/(22*60) 折算，凌晨触发时系数极低(03:00 仅 0.136)，
+# 会把配置区间压到 1/7，导致实际步数远低于预期。此处改为固定区间，不再随运行时刻打折。
+# 区间优先读 STEP_MIN / STEP_MAX，未配置时默认 15000~20000。
 def get_min_max_by_time(hour=None, minute=None):
-    if hour is None:
-        hour = time_bj.hour
-    if minute is None:
-        minute = time_bj.minute
-    time_rate = min((hour * 60 + minute) / (22 * 60), 1)
-    min_step = get_int_value_default(config, 'MIN_STEP', 18000)
-    max_step = get_int_value_default(config, 'MAX_STEP', 25000)
-    return int(time_rate * min_step), int(time_rate * max_step)
+    min_step = get_int_value_default(config, 'STEP_MIN', 15000)
+    max_step = get_int_value_default(config, 'STEP_MAX', 20000)
+    if min_step > max_step:
+        min_step, max_step = max_step, min_step
+    return int(min_step), int(max_step)
 
 
 # 虚拟ip地址
